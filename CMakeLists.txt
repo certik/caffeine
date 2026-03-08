@@ -8,6 +8,19 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
 endif()
 
+message(STATUS "CMAKE_Fortran_COMPILER_ID: ${CMAKE_Fortran_COMPILER_ID}")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
+  # Make ISO_Fortran_binding.h visible to the C compiler
+  get_filename_component(_FLANG_REAL_PATH "${CMAKE_Fortran_COMPILER}" REALPATH)
+  get_filename_component(_FLANG_BIN_DIR "${_FLANG_REAL_PATH}" DIRECTORY)
+  get_filename_component(_FLANG_PREFIX "${_FLANG_BIN_DIR}" DIRECTORY)
+  set(_FLANG_INCLUDE_DIR "${_FLANG_PREFIX}/include/flang")
+  if(EXISTS "${_FLANG_INCLUDE_DIR}/ISO_Fortran_binding.h")
+    message(STATUS "Found ISO_Fortran_binding.h in ${_FLANG_INCLUDE_DIR}")
+    include_directories(SYSTEM "${_FLANG_INCLUDE_DIR}")
+  endif()
+endif()
+
 add_subdirectory(src)
 
 # ---------------------------------------------------------
@@ -19,14 +32,6 @@ endif()
 
 target_include_directories(caffeine PUBLIC ${CMAKE_BINARY_DIR}/include)
 target_include_directories(caffeine PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
-message(STATUS "CMAKE_Fortran_COMPILER_ID: ${CMAKE_Fortran_COMPILER_ID}")
-if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
-  # We do that because fpm require to use "flang-new" as a fortran compiler because 
-  # "flang" is used for classic-flang.
-  get_filename_component(_DIR "${CMAKE_Fortran_COMPILER}" DIRECTORY)
-  set(CMAKE_Fortran_COMPILER "${_DIR}/flang-new" CACHE FILEPATH "" FORCE)
-endif()
 
 # --------
 # Assert

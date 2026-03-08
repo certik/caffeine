@@ -1,0 +1,24 @@
+[workspace]
+name = "caffeine"
+version = "0.1.0"
+description = "CoArray Fortran Framework of Efficient Interfaces to Network Environments"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+cmake = ">=3.20"
+make = "*"
+pkg-config = "*"
+git = "*"
+
+[tasks]
+configure = { cmd = """
+cmake -B build \
+  -DCMAKE_C_COMPILER=$HOME/repos/llvm/llvm-build-env/install/bin/clang \
+  -DCMAKE_CXX_COMPILER=$HOME/repos/llvm/llvm-build-env/install/bin/clang++ \
+  -DCMAKE_Fortran_COMPILER=$HOME/bin/flang \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
+""", description = "Configure with CMake using system compilers and local GASNet" }
+build = { cmd = "cmake --build build -j$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)", depends-on = ["configure"], description = "Build caffeine" }
+clean = "rm -rf build"
