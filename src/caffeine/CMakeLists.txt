@@ -25,8 +25,4 @@ set(prif_sources ${prif_sources}
   ../dlmalloc/dl_malloc.c
 )
 
-if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
-  list(APPEND prif_sources ./flang_builtins_stub.c)
-endif()
-
 add_library(caffeine ${prif_sources})
