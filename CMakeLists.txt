@@ -17,7 +17,9 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
   set(_FLANG_INCLUDE_DIR "${_FLANG_PREFIX}/include/flang")
   if(EXISTS "${_FLANG_INCLUDE_DIR}/ISO_Fortran_binding.h")
     message(STATUS "Found ISO_Fortran_binding.h in ${_FLANG_INCLUDE_DIR}")
-    include_directories(SYSTEM "${_FLANG_INCLUDE_DIR}")
+    # Only add for C/CXX — flang's .mod files in this directory are incompatible
+    # with other Fortran compilers and must not appear on the Fortran include path.
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:SHELL:-isystem ${_FLANG_INCLUDE_DIR}>")
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation --no-style-suggestions")
@@ -30,7 +32,9 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
     set(_FLANG_INCLUDE_DIR "${_FLANG_PREFIX}/include/flang")
     if(EXISTS "${_FLANG_INCLUDE_DIR}/ISO_Fortran_binding.h")
       message(STATUS "LFortran: using ISO_Fortran_binding.h from flang in ${_FLANG_INCLUDE_DIR}")
-      include_directories(SYSTEM "${_FLANG_INCLUDE_DIR}")
+      # Only add for C/CXX — flang's .mod files in this directory would crash
+      # LFortran which expects its own binary module format.
+      add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:SHELL:-isystem ${_FLANG_INCLUDE_DIR}>")
     endif()
   endif()
 endif()
