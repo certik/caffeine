@@ -20,7 +20,7 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     include_directories(SYSTEM "${_FLANG_INCLUDE_DIR}")
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation --no-style-suggestions")
 endif()
 
 add_subdirectory(src)
