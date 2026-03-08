@@ -20,7 +20,7 @@ cmake -B build \
   -DBUILD_SHARED_LIBS=OFF \
   -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
 """, description = "Configure with CMake using flang and local GASNet" }
-build = { cmd = "cmake --build build -j$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)", depends-on = ["configure"], description = "Build caffeine" }
+build = { cmd = "cmake --build build -j1", depends-on = ["configure"], description = "Build caffeine" }
 clean = "rm -rf build"
 
 [feature.lfortran]
