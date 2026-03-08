@@ -12,6 +12,13 @@ pkg-config = "*"
 git = "*"
 
 [tasks]
+build = { cmd = "cmake --build build -j1", depends-on = ["configure"], description = "Build caffeine" }
+clean = "rm -rf build"
+
+[feature.flang]
+platforms = ["osx-arm64"]
+
+[feature.flang.tasks]
 configure = { cmd = """
 cmake -B build \
   -DCMAKE_C_COMPILER=$HOME/repos/llvm/llvm-build-env/install/bin/clang \
@@ -20,8 +27,6 @@ cmake -B build \
   -DBUILD_SHARED_LIBS=OFF \
   -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
 """, description = "Configure with CMake using flang and local GASNet" }
-build = { cmd = "cmake --build build -j1", depends-on = ["configure"], description = "Build caffeine" }
-clean = "rm -rf build"
 
 [feature.lfortran]
 platforms = ["osx-arm64"]
@@ -37,4 +42,5 @@ cmake -B build \
 """, description = "Configure with CMake using lfortran and local GASNet" }
 
 [environments]
+flang = { features = ["flang"], solve-group = "default" }
 lfortran = { features = ["lfortran"], solve-group = "default" }
