@@ -50,10 +50,12 @@ if (USE_FPM)
 else()
   message(STATUS "Since USE_FPM is not enabled, libassert will be installed manually from source."
                  "If you want to use Assert's build system, please enable USE_FPM.")
+  separate_arguments(_FORTRAN_FLAGS NATIVE_COMMAND "${CMAKE_Fortran_FLAGS}")
   set(ASSERT_BUILD_COMMAND ${CMAKE_Fortran_COMPILER} -c <SOURCE_DIR>/src/assert_m.F90 
         -I<SOURCE_DIR>/include
         -DASSERT_MULTI_IMAGE=0
         -fPIC
+        ${_FORTRAN_FLAGS}
   )
   set(ASSERT_INSTALL_COMMAND 
         ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
