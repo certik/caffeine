@@ -1,0 +1,69 @@
+[workspace]
+name = "caffeine"
+version = "0.1.0"
+description = "CoArray Fortran Framework of Efficient Interfaces to Network Environments"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+fpm = "*"
+pkg-config = "*"
+coreutils = "*"
+make = "*"
+git = "*"
+curl = "*"
+
+[tasks]
+build = { cmd = "./run-fpm.sh build", depends-on = ["configure"], description = "Build caffeine" }
+test = { cmd = "./run-fpm.sh test", depends-on = ["configure"], description = "Run tests" }
+clean = "rm -rf build fpm.toml run-fpm.sh"
+
+[feature.gfortran]
+platforms = ["osx-arm64"]
+
+[feature.gfortran.tasks]
+configure = { cmd = """
+GASNET_PREFIX=$(cd ../gasnet/.pixi/envs/default && pwd) && \
+PREFIX=$(pwd)/build/local && \
+mkdir -p $PREFIX/lib/pkgconfig && \
+env FC=gfortran \
+    CC=$GASNET_PREFIX/bin/clang \
+    CXX=$GASNET_PREFIX/bin/clang++ \
+    PKG_CONFIG_PATH=$GASNET_PREFIX/lib/pkgconfig \
+    ./install.sh --yes --prefix=$PREFIX
+""", description = "Configure and build with install.sh using gfortran and pre-built GASNet" }
+
+[feature.flang]
+platforms = ["osx-arm64"]
+
+[feature.flang.tasks]
+configure = { cmd = """
+GASNET_PREFIX=$(cd ../gasnet/.pixi/envs/default && pwd) && \
+PREFIX=$(pwd)/build/local && \
+mkdir -p $PREFIX/lib/pkgconfig && \
+env FC=flang \
+    CC=$GASNET_PREFIX/bin/clang \
+    CXX=$GASNET_PREFIX/bin/clang++ \
+    PKG_CONFIG_PATH=$GASNET_PREFIX/lib/pkgconfig \
+    ./install.sh --yes --prefix=$PREFIX
+""", description = "Configure and build with install.sh using flang and pre-built GASNet" }
+
+[feature.lfortran]
+platforms = ["osx-arm64"]
+
+[feature.lfortran.tasks]
+configure = { cmd = """
+GASNET_PREFIX=$(cd ../gasnet/.pixi/envs/default && pwd) && \
+PREFIX=$(pwd)/build/local && \
+mkdir -p $PREFIX/lib/pkgconfig && \
+env FC=lfortran \
+    CC=$GASNET_PREFIX/bin/clang \
+    CXX=$GASNET_PREFIX/bin/clang++ \
+    PKG_CONFIG_PATH=$GASNET_PREFIX/lib/pkgconfig \
+    ./install.sh --yes --prefix=$PREFIX
+""", description = "Configure and build with install.sh using lfortran and pre-built GASNet" }
+
+[environments]
+gfortran = { features = ["gfortran"], solve-group = "default" }
+flang = { features = ["flang"], solve-group = "default" }
+lfortran = { features = ["lfortran"], solve-group = "default" }

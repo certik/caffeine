@@ -1,3 +1,12 @@
+LFortran
+========
+
+Compile and run tests using:
+```
+pixi r -e lfortran test
+```
+You must have gasnet installed in ../gasnet
+
 Caffeine
 ========
 
