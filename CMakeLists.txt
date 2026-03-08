@@ -19,6 +19,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     message(STATUS "Found ISO_Fortran_binding.h in ${_FLANG_INCLUDE_DIR}")
     include_directories(SYSTEM "${_FLANG_INCLUDE_DIR}")
   endif()
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation")
 endif()
 
 add_subdirectory(src)

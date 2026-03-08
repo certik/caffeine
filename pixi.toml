@@ -19,6 +19,22 @@ cmake -B build \
   -DCMAKE_Fortran_COMPILER=$HOME/bin/flang \
   -DBUILD_SHARED_LIBS=OFF \
   -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
-""", description = "Configure with CMake using system compilers and local GASNet" }
+""", description = "Configure with CMake using flang and local GASNet" }
 build = { cmd = "cmake --build build -j$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)", depends-on = ["configure"], description = "Build caffeine" }
 clean = "rm -rf build"
+
+[feature.lfortran]
+platforms = ["osx-arm64"]
+
+[feature.lfortran.tasks]
+configure = { cmd = """
+cmake -B build \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_Fortran_COMPILER=lfortran \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
+""", description = "Configure with CMake using lfortran and local GASNet" }
+
+[environments]
+lfortran = { features = ["lfortran"], solve-group = "default" }
