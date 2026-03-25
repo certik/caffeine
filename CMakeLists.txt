@@ -214,12 +214,16 @@ install(TARGETS caffeine
 # ---------------------------------------------------------
 # Test using App 
 # ---------------------------------------------------------
-if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
   # If you want to view the test logs, please run : make test ARGS="--verbose"
   enable_testing()
   add_executable(test_native_multi_image app/native-multi-image.F90)
   
-  target_compile_options(test_native_multi_image PRIVATE "-fcoarray" "-cpp" "-DHAVE_MULTI_IMAGE")
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
+    target_compile_options(test_native_multi_image PRIVATE "-fcoarray" "-cpp" "-DHAVE_MULTI_IMAGE")
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+    target_compile_options(test_native_multi_image PRIVATE "--cpp" "-DHAVE_MULTI_IMAGE" "-DHAVE_TEAM=0" "-DHAVE_SYNC=0" "-DHAVE_COLLECTIVES=0")
+  endif()
   target_link_libraries(test_native_multi_image PRIVATE caffeine)
   
   add_test(NAME TestNativeMultiImage COMMAND test_native_multi_image)
