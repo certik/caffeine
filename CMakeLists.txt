@@ -212,6 +212,34 @@ install(TARGETS caffeine
 )
 
 # ---------------------------------------------------------
+# Julienne (test framework dependency)
+# ---------------------------------------------------------
+SET(JULIENNE_GIT "https://github.com/BerkeleyLab/julienne.git")
+SET(JULIENNE_TAG "3.6.2")
+
+set(_JULIENNE_FPM_FLAGS "")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+  set(_JULIENNE_FPM_FLAGS "--flag;--cpp;--flag;--separate-compilation;--flag;--realloc-lhs-arrays")
+endif()
+
+ExternalProject_Add(julienne_lib
+  GIT_REPOSITORY ${JULIENNE_GIT}
+  GIT_TAG ${JULIENNE_TAG}
+  CONFIGURE_COMMAND ""
+  INSTALL_DIR ${CMAKE_BINARY_DIR}
+  BUILD_COMMAND fpm build --compiler ${CMAKE_Fortran_COMPILER} ${_JULIENNE_FPM_FLAGS}
+  INSTALL_COMMAND fpm install --prefix=<INSTALL_DIR> --compiler ${CMAKE_Fortran_COMPILER} ${_JULIENNE_FPM_FLAGS}
+  BUILD_IN_SOURCE 1
+)
+
+add_library(julienne_lib_external STATIC IMPORTED)
+set_target_properties(julienne_lib_external PROPERTIES
+    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libjulienne.a
+    INTERFACE_INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:${CMAKE_BINARY_DIR}/include>
+)
+add_dependencies(julienne_lib_external julienne_lib)
+
+# ---------------------------------------------------------
 # Test using App 
 # ---------------------------------------------------------
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
@@ -222,11 +250,58 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID S
   if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     target_compile_options(test_native_multi_image PRIVATE "-fcoarray" "-cpp" "-DHAVE_MULTI_IMAGE")
   elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
-    target_compile_options(test_native_multi_image PRIVATE "--cpp" "-DHAVE_MULTI_IMAGE" "-DHAVE_TEAM=0" "-DHAVE_SYNC=0" "-DHAVE_COLLECTIVES=0")
+    target_compile_options(test_native_multi_image PRIVATE "--cpp" "-DHAVE_MULTI_IMAGE" "-DHAVE_TEAM=0" "-DHAVE_SYNC_MEMORY=0" "-DHAVE_SYNC_IMAGES=0" "-DHAVE_COLLECTIVES=0")
   endif()
   target_link_libraries(test_native_multi_image PRIVATE caffeine)
   
   add_test(NAME TestNativeMultiImage COMMAND test_native_multi_image)
+
+  # ---------------------------------------------------------
+  # Julienne-based test suite
+  # ---------------------------------------------------------
+  set(TEST_SOURCES
+    test/julienne-driver.F90
+    test/prif_init_test.F90
+    test/prif_num_images_test.F90
+    test/prif_this_image_test.F90
+    test/prif_image_queries_test.F90
+    test/prif_types_test.F90
+    test/prif_co_broadcast_test.F90
+    test/prif_co_sum_test.F90
+    test/prif_co_max_test.F90
+    test/prif_co_min_test.F90
+    test/prif_co_reduce_test.F90
+    test/prif_allocate_test.F90
+    test/prif_coarray_inquiry_test.F90
+    test/prif_sync_images_test.F90
+    test/prif_image_index_test.F90
+    test/prif_teams_test.F90
+    test/prif_rma_test.F90
+    test/prif_strided_test.F90
+    test/prif_event_test.F90
+    test/prif_atomic_test.F90
+    test/prif_error_stop_test.F90
+    test/prif_stop_test.F90
+  )
+
+  add_executable(test_julienne_suite ${TEST_SOURCES})
+  add_dependencies(test_julienne_suite julienne_lib)
+
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
+    target_compile_options(test_julienne_suite PRIVATE "-fcoarray" "-cpp")
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+    target_compile_options(test_julienne_suite PRIVATE "--cpp" "-DJULIENNE_PARALLEL_CALLBACKS=0")
+  endif()
+
+  target_include_directories(test_julienne_suite PRIVATE
+    ${CMAKE_BINARY_DIR}/include
+    ${CMAKE_BINARY_DIR}/src/caffeine
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/julienne_lib-prefix/src/julienne_lib/include
+  )
+  target_link_libraries(test_julienne_suite PRIVATE caffeine julienne_lib_external)
+
+  add_test(NAME TestJulienneSuite COMMAND test_julienne_suite)
 else()
   message(STATUS "${CMAKE_Fortran_COMPILER_ID} doesn't support lowering to PRIF, test can't be built.")
 endif()
