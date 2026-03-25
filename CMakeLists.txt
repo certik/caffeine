@@ -22,7 +22,7 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:SHELL:-isystem ${_FLANG_INCLUDE_DIR}>")
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation --no-style-suggestions")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --cpp --realloc-lhs-arrays --separate-compilation --no-style-suggestions --implicit-argument-casting")
   # LFortran doesn't yet provide ISO_Fortran_binding.h; use flang's copy as a temporary fallback
   find_program(_FLANG_COMPILER flang)
   if(_FLANG_COMPILER)
