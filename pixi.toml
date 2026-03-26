@@ -13,7 +13,7 @@ git = "*"
 
 [tasks]
 build = { cmd = "cmake --build build -j1", depends-on = ["configure"], description = "Build caffeine" }
-test = { cmd = "./build/test_native_multi_image", depends-on = ["build"], description = "Run tests" }
+test = { cmd = "./build/test_native_multi_image && ./build/test_julienne_suite", depends-on = ["build"], description = "Run tests" }
 clean = "rm -rf build"
 
 [feature.flang]
