@@ -42,6 +42,20 @@ cmake -B build \
   -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
 """, description = "Configure with CMake using lfortran and local GASNet" }
 
+[feature.gfortran]
+platforms = ["osx-arm64"]
+
+[feature.gfortran.tasks]
+configure = { cmd = """
+cmake -B build \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_Fortran_COMPILER=gfortran \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
+""", description = "Configure with CMake using gfortran and local GASNet" }
+
 [environments]
 flang = { features = ["flang"], solve-group = "default" }
+gfortran = { features = ["gfortran"], solve-group = "default" }
 lfortran = { features = ["lfortran"], solve-group = "default" }
