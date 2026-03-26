@@ -37,6 +37,23 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
       add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:SHELL:-isystem ${_FLANG_INCLUDE_DIR}>")
     endif()
   endif()
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcoarray=single")
+  # Make ISO_Fortran_binding.h visible to the C compiler without pulling in
+  # GCC's full include directory (which contains stddef.h incompatible with Clang).
+  execute_process(
+    COMMAND ${CMAKE_Fortran_COMPILER} -print-file-name=include
+    OUTPUT_VARIABLE _GFORTRAN_INCLUDE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  set(_GFORTRAN_BINDING_H "${_GFORTRAN_INCLUDE_DIR}/ISO_Fortran_binding.h")
+  if(EXISTS "${_GFORTRAN_BINDING_H}")
+    message(STATUS "Found ISO_Fortran_binding.h in ${_GFORTRAN_INCLUDE_DIR}")
+    set(_CFI_INCLUDE_DIR "${CMAKE_BINARY_DIR}/gfortran-cfi-include")
+    file(MAKE_DIRECTORY "${_CFI_INCLUDE_DIR}")
+    file(COPY "${_GFORTRAN_BINDING_H}" DESTINATION "${_CFI_INCLUDE_DIR}")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:SHELL:-isystem ${_CFI_INCLUDE_DIR}>")
+  endif()
 endif()
 
 add_subdirectory(src)
@@ -56,10 +73,14 @@ target_include_directories(caffeine PUBLIC ${CMAKE_SOURCE_DIR}/include)
 # --------
 SET(ASSERT_GIT "https://github.com/berkeleylab/assert.git")
 SET(ASSERT_TAG "3.0.2")
+set(_ASSERT_FPM_FLAGS "")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set(_ASSERT_FPM_FLAGS "--flag;-fcoarray=single")
+endif()
 if (USE_FPM)
-  set(ASSERT_BUILD_COMMAND fpm build --compiler ${CMAKE_Fortran_COMPILER})
+  set(ASSERT_BUILD_COMMAND fpm build --compiler ${CMAKE_Fortran_COMPILER} ${_ASSERT_FPM_FLAGS})
   set(ASSERT_INSTALL_COMMAND 
-        fpm install --prefix=<INSTALL_DIR> --compiler ${CMAKE_Fortran_COMPILER} &&
+        fpm install --prefix=<INSTALL_DIR> --compiler ${CMAKE_Fortran_COMPILER} ${_ASSERT_FPM_FLAGS} &&
         ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR> &&
         ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include <INSTALL_DIR>/include
   ) 
@@ -220,6 +241,8 @@ SET(JULIENNE_TAG "3.6.2")
 set(_JULIENNE_FPM_FLAGS "")
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
   set(_JULIENNE_FPM_FLAGS "--flag;--cpp;--flag;--separate-compilation;--flag;--realloc-lhs-arrays")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set(_JULIENNE_FPM_FLAGS "--flag;-fcoarray=single")
 endif()
 
 ExternalProject_Add(julienne_lib
@@ -242,7 +265,7 @@ add_dependencies(julienne_lib_external julienne_lib)
 # ---------------------------------------------------------
 # Test using App 
 # ---------------------------------------------------------
-if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran" OR CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   # If you want to view the test logs, please run : make test ARGS="--verbose"
   enable_testing()
   add_executable(test_native_multi_image app/native-multi-image.F90)
@@ -251,6 +274,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID S
     target_compile_options(test_native_multi_image PRIVATE "-fcoarray" "-cpp" "-DHAVE_MULTI_IMAGE")
   elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
     target_compile_options(test_native_multi_image PRIVATE "--cpp" "-DHAVE_MULTI_IMAGE" "-DHAVE_TEAM=0" "-DHAVE_SYNC_MEMORY=0" "-DHAVE_SYNC_IMAGES=0" "-DHAVE_COLLECTIVES=0")
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(test_native_multi_image PRIVATE "-fcoarray=single" "-cpp" "-DHAVE_MULTI_IMAGE" "-DHAVE_TEAM=0")
   endif()
   target_link_libraries(test_native_multi_image PRIVATE caffeine)
   
@@ -291,6 +316,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" OR CMAKE_Fortran_COMPILER_ID S
     target_compile_options(test_julienne_suite PRIVATE "-fcoarray" "-cpp")
   elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
     target_compile_options(test_julienne_suite PRIVATE "--cpp" "-DJULIENNE_PARALLEL_CALLBACKS=0")
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(test_julienne_suite PRIVATE "-fcoarray=single" "-cpp")
   endif()
 
   target_include_directories(test_julienne_suite PRIVATE
