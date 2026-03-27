@@ -371,6 +371,21 @@ if [ "${BREW_PREFIX:-unset}" != unset ] ; then
   fi
 fi
 
+# Generic fallback: find ISO_Fortran_binding.h from the Fortran compiler installation
+if [ -z "$APPEND_CFLAGS" ]; then
+  FC_PREFIX=$(dirname $(dirname $FPM_FC))
+  ISO_HEADER=$(find "$FC_PREFIX" -name ISO_Fortran_binding.h 2>/dev/null | head -1)
+  if [ -n "$ISO_HEADER" ]; then
+    # Copy just this header to an isolated directory to avoid pulling in
+    # other compiler-specific headers (e.g., gfortran's stddef.h) that
+    # conflict with the C compiler's own headers.
+    ISO_INCLUDE_DIR="$DEPENDENCIES_DIR/fortran-include"
+    mkdir -p "$ISO_INCLUDE_DIR"
+    cp "$ISO_HEADER" "$ISO_INCLUDE_DIR/"
+    APPEND_CFLAGS="-I$ISO_INCLUDE_DIR"
+  fi
+fi
+
 ask_package_permission()
 {
   cat << EOF

@@ -6,56 +6,32 @@ channels = ["conda-forge"]
 platforms = ["osx-arm64"]
 
 [dependencies]
-cmake = ">=3.20"
-make = "*"
+fpm = "*"
 pkg-config = "*"
+coreutils = "*"
+make = "*"
 git = "*"
+curl = "*"
 
 [tasks]
-build = { cmd = "cmake --build build -j1", depends-on = ["configure"], description = "Build caffeine" }
-test = { cmd = "./build/test_native_multi_image && ./build/test_julienne_suite", depends-on = ["build"], description = "Run tests" }
-clean = "rm -rf build"
-
-[feature.flang]
-platforms = ["osx-arm64"]
-
-[feature.flang.tasks]
-configure = { cmd = """
-cmake -B build \
-  -DCMAKE_C_COMPILER=$HOME/repos/llvm/llvm-build-env/install/bin/clang \
-  -DCMAKE_CXX_COMPILER=$HOME/repos/llvm/llvm-build-env/install/bin/clang++ \
-  -DCMAKE_Fortran_COMPILER=$HOME/bin/flang \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
-""", description = "Configure with CMake using flang and local GASNet" }
-
-[feature.lfortran]
-platforms = ["osx-arm64"]
-
-[feature.lfortran.tasks]
-configure = { cmd = """
-cmake -B build \
-  -DCMAKE_C_COMPILER=clang \
-  -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_Fortran_COMPILER=lfortran \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
-""", description = "Configure with CMake using lfortran and local GASNet" }
+build = { cmd = "./run-fpm.sh build", depends-on = ["configure"], description = "Build caffeine" }
+test = { cmd = "./run-fpm.sh test", depends-on = ["configure"], description = "Run tests" }
+clean = "rm -rf build fpm.toml run-fpm.sh"
 
 [feature.gfortran]
 platforms = ["osx-arm64"]
 
 [feature.gfortran.tasks]
 configure = { cmd = """
-cmake -B build \
-  -DCMAKE_C_COMPILER=clang \
-  -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_Fortran_COMPILER=gfortran \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DGASNet_ROOT=$(cd ../gasnet/.pixi/envs/default && pwd)
-""", description = "Configure with CMake using gfortran and local GASNet" }
+GASNET_PREFIX=$(cd ../gasnet/.pixi/envs/default && pwd) && \
+PREFIX=$(pwd)/build/local && \
+mkdir -p $PREFIX/lib/pkgconfig && \
+env FC=gfortran \
+    CC=$GASNET_PREFIX/bin/clang \
+    CXX=$GASNET_PREFIX/bin/clang++ \
+    PKG_CONFIG_PATH=$GASNET_PREFIX/lib/pkgconfig \
+    ./install.sh --yes --prefix=$PREFIX
+""", description = "Configure and build with install.sh using gfortran and pre-built GASNet" }
 
 [environments]
-flang = { features = ["flang"], solve-group = "default" }
 gfortran = { features = ["gfortran"], solve-group = "default" }
-lfortran = { features = ["lfortran"], solve-group = "default" }
